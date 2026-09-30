@@ -33,3 +33,6 @@ override.tf.json
 .idea/
 *.swp
 .DS_Store
+# Per-env inputs without secrets (project IDs + domains are public; emails come from CI secrets)
+!infra/dev.tfvars
+!infra/prod.tfvars
