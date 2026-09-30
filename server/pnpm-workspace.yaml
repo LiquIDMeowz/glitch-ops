@@ -1,0 +1,5 @@
+# pnpm 11 blocks dependency install scripts until each is decided. Neither is needed on the
+# server: @firebase/util's writes browser auto-init defaults, protobufjs's is a version check.
+allowBuilds:
+  "@firebase/util": false
+  protobufjs: false
