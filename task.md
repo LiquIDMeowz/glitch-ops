@@ -9,6 +9,12 @@
 | Login server (Firebase `__session` cookie + email allowlist) | done | `server/` (Hono + firebase-admin, Node 24 runs TS directly), 17 vitest tests; not deployed yet |
 | Firebase: project, Hosting sites, Auth config, custom domains (Terraform) | pending | Firebase + Hosting site created in dev by a 2026-09-30 test (scratch state) — import into `infra/` |
 | Enable Google sign-in in Firebase console (dev, prod) | pending | One-time manual step per project, after Auth is enabled by Terraform |
-| glitch-lz 3-projects: add Firebase APIs to `ops` | pending | firebase, firebasehosting, identitytoolkit |
+| glitch-lz 3-projects: Firebase for `ops` | pending | **Next.** APIs firebase, firebasehosting, identitytoolkit; deployer roles firebasehosting.admin + identityplatform.admin; drop iap API/role; custom role with only `firebaseauth.users.createSession` + runtime SA `wiki@` granted it (deployer can't grant IAM — no projectIamAdmin by design). Then lz-apply approval |
+| glitch-modules cloud-run-service: optional existing `service_account_email` | pending | So the factory-created runtime SA can be used; before tagging v0.1.0 |
 | Infra: Artifact Registry, Cloud Run (max_instances, Firebase-proxied), log exclusion | pending | Via glitch-modules |
 | CI: build (content via deploy key, quiet logs), deploy dev, promote prod | pending | |
+
+## Handoff
+
+- 2026-09-30: skeleton, private content repo, login server (#3), modules (glitch-modules #4, CI + required `ci-ok`) done. Firebase + Hosting site `glitch-ops-dev-wiki` exist in dev from a scratch test (local state in a Claude scratchpad — re-import into `infra/`, don't recreate).
+- Next: glitch-lz 3-projects Firebase change (task above) → module SA option → `glitch-ops/infra` (Firebase import, Hosting sites, Auth config, custom domains, artifact-repo + cloud-run-service, Dockerfile) → CI with deploy key → /security-review → manual steps (Google sign-in in Firebase console, SuperHosting DNS, deploy key).
