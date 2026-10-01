@@ -8,7 +8,10 @@
 | Export ClickUp GCP docs to Markdown | pending | Via ClickUp API v3 (pages with content) → `glitch-ops-content/docs/` |
 | Login server (Firebase `__session` cookie + email allowlist) | done | `server/` (Hono + firebase-admin, Node 24 runs TS directly), 17 vitest tests; not deployed yet |
 | Firebase: project, Hosting sites, Auth config, custom domains (Terraform) | done | `infra/` (#5); dev Firebase project + site still to import (infra/README) | Firebase + Hosting site created in dev by a 2026-09-30 test (scratch state) — import into `infra/` |
-| Enable Google sign-in in Firebase console (dev, prod) | pending | One-time manual step per project, after Auth is enabled by Terraform |
+| First dev deploy | done | 2026-10-01 run 36828102412 (after ERR-002); Hosting → Cloud Run → login page verified |
+| Enable Google sign-in (dev) + DNS CNAME dev.wiki → glitch-ops-dev-wiki.web.app | pending | Manual; then test sign-in on https://dev.wiki.glitch-cloud.com |
+| Prod: Google sign-in, DNS CNAME wiki → glitch-ops-prod-wiki.web.app, approve prod deploy | pending | After dev works end to end |
+| Hardening: logout via POST, Content-Security-Policy, pin node:24-slim by digest | pending | From the pre-deploy review 2026-10-01; none blocking |
 | glitch-lz 3-projects: Firebase for `ops` | done | glitch-lz #20 (apply needs lz-apply approval). APIs firebase, firebasehosting, identitytoolkit; deployer roles firebasehosting.admin + identityplatform.admin; drop iap API/role; custom role with only `firebaseauth.users.createSession` + runtime SA `wiki@` granted it (deployer can't grant IAM — no projectIamAdmin by design). Then lz-apply approval |
 | glitch-modules cloud-run-service: optional existing `service_account_email` | done | glitch-modules #5 | So the factory-created runtime SA can be used; before tagging v0.1.0 |
 | Infra: Artifact Registry, Cloud Run (max_instances, Firebase-proxied), log exclusion | done | glitch-modules @ 074f621; tag v0.1.0 after first dev deploy |

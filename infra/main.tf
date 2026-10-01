@@ -83,7 +83,7 @@ resource "google_firebase_hosting_release" "wiki" {
 # --- Container image registry and the login server ----------------------------------------------
 
 module "images" {
-  source = "git::https://github.com/Vlad-Krastev/glitch-modules.git//modules/artifact-repo?ref=074f621f9c75751cfd41cdab74e6b0012ce47b7b"
+  source = "git::https://github.com/Vlad-Krastev/glitch-modules.git//modules/artifact-repo?ref=v0.1.0"
 
   project_id    = var.project_id
   repository_id = "wiki"
@@ -93,7 +93,7 @@ module "images" {
 }
 
 module "server" {
-  source = "git::https://github.com/Vlad-Krastev/glitch-modules.git//modules/cloud-run-service?ref=074f621f9c75751cfd41cdab74e6b0012ce47b7b"
+  source = "git::https://github.com/Vlad-Krastev/glitch-modules.git//modules/cloud-run-service?ref=v0.1.0"
 
   project_id            = var.project_id
   name                  = "wiki-server"
