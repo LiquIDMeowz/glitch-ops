@@ -1,0 +1,122 @@
+name: deploy-env
+
+# Reusable: build the wiki image with the private content and apply infra/ to one environment.
+# Public repo: page names must never reach the logs, so the site build is silent and only
+# summaries are printed.
+on:
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        required: true
+      content_ref:
+        description: Content repo commit to build (empty = main). Prod reuses dev's commit.
+        type: string
+        default: ""
+    outputs:
+      content_sha:
+        description: Content repo commit that was built.
+        value: ${{ jobs.deploy.outputs.content_sha }}
+
+permissions:
+  contents: read
+
+env:
+  TF_VERSION: 1.15.4
+  TF_IN_AUTOMATION: "true"
+  TF_INPUT: "false"
+
+jobs:
+  deploy:
+    name: deploy (${{ inputs.environment }})
+    runs-on: ubuntu-latest
+    # The WIF binding for this deployer only accepts tokens from this environment (prod: main only,
+    # required reviewer)
+    environment: ${{ inputs.environment }}
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      content_sha: ${{ steps.content.outputs.sha }}
+    env:
+      TF_VAR_allowed_emails: ${{ secrets.ALLOWED_EMAILS }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: checkout content (private)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Vlad-Krastev/glitch-ops-content
+          ref: ${{ inputs.content_ref }}
+          ssh-key: ${{ secrets.CONTENT_DEPLOY_KEY }}
+          path: content
+          persist-credentials: false
+      - id: content
+        run: echo "sha=$(git -C content rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+      - name: build site (silent — page names stay out of public logs)
+        working-directory: site
+        env:
+          CONTENT_DIR: ${{ github.workspace }}/content/docs
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile >/dev/null
+          if ! pnpm build >/dev/null 2>&1; then
+            echo "::error::site build failed — reproduce locally with the content repo (output hidden on purpose)"
+            exit 1
+          fi
+          echo "site built: $(find dist -name '*.html' | wc -l) pages"
+          rm -rf ../content
+
+      - id: auth
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.DEPLOYER_SA }}
+          token_format: access_token
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: terraform init
+        working-directory: infra
+        run: terraform init -backend-config="bucket=${{ vars.STATE_BUCKET }}" -backend-config="prefix=${{ vars.STATE_PREFIX }}" >/dev/null
+
+      # The registry must exist before the first push; a no-op after that.
+      - name: ensure image repository
+        working-directory: infra
+        run: |
+          terraform apply -auto-approve -no-color -var-file=${{ inputs.environment }}.tfvars \
+            -target=module.images > apply-images.log 2>&1 || { grep -A15 '^Error' apply-images.log; exit 1; }
+          echo "repository: $(terraform output -raw image_repository)"
+
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ${{ vars.REGION }}-docker.pkg.dev
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+      - id: image
+        name: build and push image
+        run: |
+          repo=$(terraform -chdir=infra output -raw image_repository)
+          tag="$repo/wiki:${GITHUB_SHA}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          docker build --quiet -t "$tag" . >/dev/null
+          docker push --quiet "$tag" >/dev/null
+          digest=$(docker inspect --format '{{index .RepoDigests 0}}' "$tag")
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+          echo "pushed $digest"
+
+      - name: terraform apply
+        working-directory: infra
+        env:
+          TF_VAR_image: ${{ steps.image.outputs.digest }}
+        run: |
+          terraform apply -auto-approve -no-color -var-file=${{ inputs.environment }}.tfvars > apply.log 2>&1 \
+            || { grep -A15 '^Error' apply.log; exit 1; }
+          grep -E '^Apply complete' apply.log
+          echo "hosting: $(terraform output -raw hosting_url)"

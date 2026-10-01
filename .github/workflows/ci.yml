@@ -1,0 +1,144 @@
+name: ci
+
+# PR: tests, site build with the placeholder page, Terraform checks and a quiet dev plan.
+# main: deploy to dev automatically, then to prod after the prod environment's reviewer approves —
+# with the same code and content commits.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  TF_VERSION: 1.15.4
+  TFLINT_VERSION: v0.64.0
+  TF_IN_AUTOMATION: "true"
+  TF_INPUT: "false"
+
+jobs:
+  test:
+    name: server tests / site build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+      - name: server
+        working-directory: server
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+          pnpm typecheck
+          pnpm test
+      - name: site (placeholder content)
+        working-directory: site
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+
+  terraform:
+    name: fmt / validate / tflint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+      - run: terraform fmt -check -recursive -diff infra
+      - run: |
+          terraform -chdir=infra init -backend=false >/dev/null
+          terraform -chdir=infra validate
+      - uses: terraform-linters/setup-tflint@1cf010d3c7aef302051ccdb68c14c5dc2efa34ef # v6.3.1
+        with:
+          tflint_version: ${{ env.TFLINT_VERSION }}
+      - name: tflint
+        working-directory: infra
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          tflint --init
+          tflint --format compact
+
+  plan-dev:
+    name: plan (dev)
+    if: github.event_name == 'pull_request'
+    needs: [terraform]
+    runs-on: ubuntu-latest
+    environment: dev
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      TF_VAR_allowed_emails: ${{ secrets.ALLOWED_EMAILS }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.DEPLOYER_SA }}
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+      - name: plan (summary only — public logs)
+        working-directory: infra
+        run: |
+          terraform init -backend-config="bucket=${{ vars.STATE_BUCKET }}" -backend-config="prefix=${{ vars.STATE_PREFIX }}" >/dev/null
+          # Plan against the image that is running now, so the plan shows only real changes.
+          image=$(gcloud run services describe wiki-server --project "${{ vars.GCP_PROJECT }}" --region "${{ vars.REGION }}" \
+            --format='value(spec.template.spec.containers[0].image)' 2>/dev/null || true)
+          [ -n "$image" ] && export TF_VAR_image="$image"
+          terraform plan -lock=false -no-color -var-file=dev.tfvars -out=tfplan > plan.log 2>&1 \
+            || { grep -A15 '^Error' plan.log; exit 1; }
+          terraform show -json tfplan | jq -r '.resource_changes[] | select(.change.actions != ["no-op"])
+            | "\(.change.actions | join("/")) \(.address)"'
+          grep -E '^(Plan:|No changes)' plan.log
+
+  deploy-dev:
+    if: github.event_name == 'push'
+    needs: [test, terraform]
+    uses: ./.github/workflows/deploy-env.yml
+    with:
+      environment: dev
+    secrets: inherit
+    permissions:
+      contents: read
+      id-token: write
+
+  deploy-prod:
+    needs: [deploy-dev]
+    uses: ./.github/workflows/deploy-env.yml
+    with:
+      environment: prod
+      content_ref: ${{ needs.deploy-dev.outputs.content_sha }}
+    secrets: inherit
+    permissions:
+      contents: read
+      id-token: write
+
+  # Single required check for the ruleset
+  ci-ok:
+    name: ci-ok
+    if: always()
+    needs: [test, terraform, plan-dev]
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          for r in "${{ needs.test.result }}" "${{ needs.terraform.result }}" "${{ needs.plan-dev.result }}"; do
+            case "$r" in success|skipped) ;; *) exit 1 ;; esac
+          done
