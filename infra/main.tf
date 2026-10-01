@@ -102,7 +102,6 @@ module "server" {
   service_account_email = local.runtime_sa
   max_instances         = 1
   access                = "firebase" # the server checks the Firebase session + allowlist itself
-  memory                = "256Mi"
 
   env = {
     GOOGLE_CLOUD_PROJECT = var.project_id
