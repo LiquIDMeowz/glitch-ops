@@ -22,5 +22,10 @@
 
 ## Handoff
 
-- 2026-10-07: wiki live on **dev** (https://dev.wiki.glitch-cloud.com): ClickUp import (102 pages), Workloads, generated ADRs / lessons learned / modules, Mermaid. Dependabot alerts fixed; Dependabot PRs skip the plan job (no secrets).
-- Next: **prod** — follow the Prod rows above in order (Firebase by operator → approve deploy → sign-in + OAuth client + DNS). Optional: hardening row, more CMEK pages.
+- 2026-10-08: wiki on **dev** has 166 pages — ClickUp import, Workloads, generated ADRs / lessons learned /
+  modules, GCP network gaps, new Kubernetes / Platforms / Reference sections (from ~/Companions), 9 runbooks.
+  Claude setup: slim global CLAUDE.md + path-scoped rules, guard hook, agents `wiki-writer` / `docs-verifier`,
+  skills `init-project` / `lz-new-app` / `deploy-workload` / `wiki-publish` / `merge-pr`, repo CLAUDE.md files.
+- Next: **prod** (Prod rows above, runbook `runbooks/promote-to-prod`). Optional: hardening row; a git
+  pre-commit hook in the public repos for real IDs (the Claude guard only covers Claude's commits);
+  `docs-verifier` sweeps per wiki section; Interconnect 50/100 Gbps note (Google docs disagree).
