@@ -1,36 +1,75 @@
 // @ts-check
-import { readdirSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 
-// Sidebar groups come from the top-level folders of the (private) content, like ClickUp doc
-// folders: `automation/` becomes the "Automation" group and every Markdown file in it a page;
-// subfolders become nested groups. Nothing about the content is hard-coded in this public repo.
-const docsDir = new URL('./src/content/docs/', import.meta.url);
-// Folder name → group label; known acronyms stay upper case ("cmek" → "CMEK").
-const ACRONYMS = new Set(['cmek', 'iam', 'vpc', 'gcs', 'gke', 'kms', 'dns', 'sql', 'ci', 'cd']);
+// The sidebar mirrors the folders of the (private) content, like ClickUp docs: a folder is a
+// group, a Markdown file a page, subfolders nested groups. A folder's index page names its group
+// (its title, e.g. "Network & Security") and shows as "Overview"; pages are ordered by
+// `sidebar.order`. Nothing about the content is hard-coded in this public repo.
+const docsDir = fileURLToPath(new URL('./src/content/docs/', import.meta.url));
+const PAGE = /\.mdx?$/;
+
+// Folder name → fallback label when a folder has no index page ("cmek" → "CMEK").
+const ACRONYMS = new Set(['cmek', 'gcp', 'iam', 'vpc', 'gcs', 'gke', 'kms', 'dns', 'sql', 'ci', 'cd', 'ai', 'ml']);
 const label = (name) =>
 	name
 		.split('-')
 		.map((word) => (ACRONYMS.has(word) ? word.toUpperCase() : word.charAt(0).toUpperCase() + word.slice(1)))
 		.join(' ');
-const groups = readdirSync(docsDir, { withFileTypes: true })
-	.filter((entry) => entry.isDirectory())
-	.map(({ name }) => ({
-		label: label(name),
+
+// Minimal frontmatter read: title and sidebar.order are all the sidebar needs.
+function frontmatter(file) {
+	const head = readFileSync(file, 'utf8').match(/^---\n([\s\S]*?)\n---/)?.[1] ?? '';
+	const title = head.match(/^title:\s*(.+)$/m)?.[1].trim().replace(/^["']|["']$/g, '');
+	const order = Number(head.match(/^\s+order:\s*(-?\d+)\s*$/m)?.[1] ?? Infinity);
+	return { title, order };
+}
+
+function group(dir, slugPrefix, depth) {
+	const entries = readdirSync(dir, { withFileTypes: true });
+	const indexFile = entries.find((e) => e.isFile() && /^index\.mdx?$/.test(e.name));
+	const pages = entries
+		.filter((e) => e.isFile() && PAGE.test(e.name))
+		.map((e) => {
+			const name = e.name.replace(PAGE, '');
+			return { slug: name === 'index' ? slugPrefix : `${slugPrefix}/${name}`, ...frontmatter(join(dir, e.name)) };
+		})
+		.sort((a, b) => a.order - b.order || (a.title ?? '').localeCompare(b.title ?? ''))
+		.map(({ slug }) => slug);
+	const subgroups = entries
+		.filter((e) => e.isDirectory())
+		.map((e) => group(join(dir, e.name), `${slugPrefix}/${e.name}`, depth + 1))
+		.sort((a, b) => a.label.localeCompare(b.label));
+	const name = slugPrefix.split('/').pop() ?? slugPrefix;
+	return {
+		label: (depth > 0 && indexFile && frontmatter(join(dir, indexFile.name)).title) || label(name),
 		collapsed: true,
-		items: [{ autogenerate: { directory: name, collapsed: true } }],
-	}));
+		items: [...pages, ...subgroups],
+	};
+}
+
+// Top-level groups keep their folder label ("Landing Zone", "GCP", "Terraform", "Runbooks").
+const ORDER = ['landing-zone', 'gcp', 'terraform', 'runbooks'];
+const sidebar = readdirSync(docsDir, { withFileTypes: true })
+	.filter((e) => e.isDirectory())
+	.sort((a, b) => {
+		const rank = (n) => (ORDER.includes(n) ? ORDER.indexOf(n) : ORDER.length);
+		return rank(a.name) - rank(b.name) || a.name.localeCompare(b.name);
+	})
+	.map((e) => group(join(docsDir, e.name), e.name, 0));
 
 export default defineConfig({
 	integrations: [
 		starlight({
 			title: 'GlitchOps',
-			description: 'GCP reference docs, runbooks and landing-zone notes.',
+			description: 'GlitchLZ design, GCP reference, Terraform and runbooks.',
 			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/Vlad-Krastev/glitch-ops' }],
 			// Pages live in the private content repo; only signed-in wiki users see this link.
 			editLink: { baseUrl: 'https://github.com/Vlad-Krastev/glitch-ops-content/edit/main/docs/' },
-			sidebar: groups,
+			sidebar,
 		}),
 	],
 });
