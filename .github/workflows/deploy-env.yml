@@ -33,6 +33,11 @@ jobs:
     # The WIF binding for this deployer only accepts tokens from this environment (prod: main only,
     # required reviewer)
     environment: ${{ inputs.environment }}
+    # One deploy per environment at a time. Dev deploys queue; for prod a newer commit replaces the
+    # one still waiting for approval, so unapproved prod runs can simply be ignored.
+    concurrency:
+      group: deploy-${{ inputs.environment }}
+      cancel-in-progress: ${{ inputs.environment == 'prod' }}
     permissions:
       contents: read
       id-token: write

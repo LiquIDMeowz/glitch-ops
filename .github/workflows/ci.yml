@@ -12,8 +12,11 @@ on:
 permissions:
   contents: read
 
+# Only PR runs share a group (a new push cancels the old run). Runs on main are not grouped here:
+# deploys are serialised per environment in deploy-env.yml, so a prod job waiting for approval
+# never blocks the next dev deploy.
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
