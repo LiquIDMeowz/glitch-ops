@@ -52,8 +52,8 @@ function group(dir, slugPrefix, depth) {
 	};
 }
 
-// Top-level groups keep their folder label ("Landing Zone", "Workloads", "GCP", "Terraform", "Runbooks").
-const ORDER = ['landing-zone', 'workloads', 'gcp', 'terraform', 'runbooks'];
+// Top-level groups keep their folder label ("Landing Zone", "Workloads", "GCP", "Kubernetes", "Terraform", "Platforms", "Reference", "Runbooks").
+const ORDER = ['landing-zone', 'workloads', 'gcp', 'kubernetes', 'terraform', 'platforms', 'reference', 'runbooks'];
 const sidebar = readdirSync(docsDir, { withFileTypes: true })
 	.filter((e) => e.isDirectory())
 	.sort((a, b) => {
