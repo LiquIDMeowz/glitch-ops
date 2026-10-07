@@ -14,7 +14,9 @@
     "astro": "^7.2.10",
     "astro-mermaid": "^2.1.0",
     "mermaid": "^11.17.2",
-    "sharp": "^0.35.3"
+    "sharp": "^0.35.3",
+    "starlight-codeblock-fullscreen": "^2.0.0",
+    "starlight-links-validator": "^0.26.0"
   },
   "private": true
 }
