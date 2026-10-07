@@ -8,6 +8,9 @@ on:
     branches: [main]
   push:
     branches: [main]
+  # Content lives in the private repo and can't trigger this workflow: run it by hand to deploy
+  # content changes (Actions → ci → Run workflow).
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -113,7 +116,7 @@ jobs:
           grep -E '^(Plan:|No changes)' plan.log
 
   deploy-dev:
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     needs: [test, terraform]
     uses: ./.github/workflows/deploy-env.yml
     with:
