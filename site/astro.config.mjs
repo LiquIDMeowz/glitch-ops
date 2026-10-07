@@ -7,6 +7,7 @@ import starlight from '@astrojs/starlight';
 import mermaid from 'astro-mermaid';
 import starlightCodeblockFullscreen from 'starlight-codeblock-fullscreen';
 import starlightLinksValidator from 'starlight-links-validator';
+import starlightQuiz from 'starlight-quiz';
 
 // The sidebar mirrors the folders of the (private) content, like ClickUp docs: a folder is a
 // group, a Markdown file a page, subfolders nested groups. A folder's index page names its group
@@ -77,6 +78,8 @@ export default defineConfig({
 				// Fails the build on broken internal links (CI hides the output: it names pages).
 				starlightLinksValidator(),
 				starlightCodeblockFullscreen(),
+				// <Quiz> blocks in .mdx pages; answers persist in the reader's browser only.
+				starlightQuiz(),
 			],
 		}),
 	],
