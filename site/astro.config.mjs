@@ -5,6 +5,8 @@ import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import mermaid from 'astro-mermaid';
+import starlightCodeblockFullscreen from 'starlight-codeblock-fullscreen';
+import starlightLinksValidator from 'starlight-links-validator';
 
 // The sidebar mirrors the folders of the (private) content, like ClickUp docs: a folder is a
 // group, a Markdown file a page, subfolders nested groups. A folder's index page names its group
@@ -73,6 +75,11 @@ export default defineConfig({
 			// Pages live in the private content repo; only signed-in wiki users see this link.
 			editLink: { baseUrl: 'https://github.com/Vlad-Krastev/glitch-ops-content/edit/main/docs/' },
 			sidebar,
+			plugins: [
+				// Fails the build on broken internal links (CI hides the output: it names pages).
+				starlightLinksValidator(),
+				starlightCodeblockFullscreen(),
+			],
 		}),
 	],
 });
