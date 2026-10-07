@@ -1,2 +1,6 @@
 allowBuilds:
   esbuild: true
+# Security fixes for transitive deps whose parents still pin vulnerable ranges (Dependabot alerts).
+overrides:
+  katex: ^0.18.2
+  postcss-selector-parser: ^7.1.6

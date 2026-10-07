@@ -3,3 +3,6 @@
 allowBuilds:
   "@firebase/util": false
   protobufjs: false
+# Security fix for a transitive dep whose parents still pin a vulnerable range (Dependabot alert).
+overrides:
+  uuid: ^11.1.1
