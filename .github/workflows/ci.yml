@@ -80,7 +80,9 @@ jobs:
 
   plan-dev:
     name: plan (dev)
-    if: github.event_name == 'pull_request'
+    # Dependabot-triggered runs get no Actions/environment secrets (no WIF vars, no ALLOWED_EMAILS),
+    # so the plan can't run there; tests, site build and terraform checks still do.
+    if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'
     needs: [terraform]
     runs-on: ubuntu-latest
     environment: dev
