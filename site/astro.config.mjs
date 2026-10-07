@@ -72,8 +72,6 @@ export default defineConfig({
 			title: 'GlitchOps',
 			description: 'GlitchLZ design, GCP reference, Terraform and runbooks.',
 			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/Vlad-Krastev/glitch-ops' }],
-			// Pages live in the private content repo; only signed-in wiki users see this link.
-			editLink: { baseUrl: 'https://github.com/Vlad-Krastev/glitch-ops-content/edit/main/docs/' },
 			sidebar,
 			plugins: [
 				// Fails the build on broken internal links (CI hides the output: it names pages).
