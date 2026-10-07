@@ -32,3 +32,13 @@ Console (APIs & Services → Credentials → "Web client (auto created by Google
 JavaScript origin `https://<domain>` and redirect URI `https://<domain>/__/auth/handler`. Needed per
 project (prod: wiki.glitch-cloud.com). Also: Google picked the first browser account silently —
 login now sets `prompt: 'select_account'`.
+
+## ERR-004 — dev.wiki "/" kept showing Firebase "Site Not Found" after the domain was connected
+- **Date:** 2026-10-07
+- **Tried:** flushing Windows DNS, Chrome host cache / socket pools; re-releasing the active Hosting version via API.
+- **Result:** browsers still got the 404. `curl` without `Accept-Encoding` got the correct 302 (`x-cache: MISS`), with `Accept-Encoding: gzip, br` a cached 404 (`x-cache: HIT`) — the Hosting CDN had cached "Site Not Found" for `/` before the domain was connected. Re-releasing the active version fails: `FAILED_PRECONDITION … is the current active version`.
+
+### Resolution
+Cloned the active version (`versions:clone`, finalize) and released the clone → CDN purged, `/`
+returns 302 to login. Permanent: infra creates a new Hosting version + release whenever the image
+changes (`terraform_data.deploy` → `replace_triggered_by`), so every deploy purges the CDN.

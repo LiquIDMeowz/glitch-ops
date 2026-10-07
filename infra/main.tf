@@ -34,6 +34,10 @@ resource "google_identity_platform_config" "this" {
     anonymous {
       enabled = false
     }
+    # Written by the console when Google sign-in was enabled; declared to avoid a perpetual diff.
+    phone_number {
+      enabled = false
+    }
   }
 
   depends_on = [google_firebase_project.this]
@@ -58,9 +62,19 @@ resource "google_firebase_hosting_custom_domain" "wiki" {
 }
 
 # Hosting serves nothing itself: every request goes to the login server on Cloud Run.
+# A new version + release on every image change: publishing a release is what purges the Hosting
+# CDN cache (ERR-004 — a 404 cached before the custom domain was connected kept being served).
+resource "terraform_data" "deploy" {
+  input = var.image
+}
+
 resource "google_firebase_hosting_version" "wiki" {
   provider = google-beta
   site_id  = google_firebase_hosting_site.wiki.site_id
+
+  lifecycle {
+    replace_triggered_by = [terraform_data.deploy]
+  }
 
   config {
     rewrites {
