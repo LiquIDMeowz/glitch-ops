@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import mermaid from 'astro-mermaid';
 
 // The sidebar mirrors the folders of the (private) content, like ClickUp docs: a folder is a
 // group, a Markdown file a page, subfolders nested groups. A folder's index page names its group
@@ -51,8 +52,8 @@ function group(dir, slugPrefix, depth) {
 	};
 }
 
-// Top-level groups keep their folder label ("Landing Zone", "GCP", "Terraform", "Runbooks").
-const ORDER = ['landing-zone', 'gcp', 'terraform', 'runbooks'];
+// Top-level groups keep their folder label ("Landing Zone", "Workloads", "GCP", "Terraform", "Runbooks").
+const ORDER = ['landing-zone', 'workloads', 'gcp', 'terraform', 'runbooks'];
 const sidebar = readdirSync(docsDir, { withFileTypes: true })
 	.filter((e) => e.isDirectory())
 	.sort((a, b) => {
@@ -63,6 +64,8 @@ const sidebar = readdirSync(docsDir, { withFileTypes: true })
 
 export default defineConfig({
 	integrations: [
+		// ```mermaid code blocks render as diagrams (client-side); must come before Starlight.
+		mermaid({ autoTheme: true }),
 		starlight({
 			title: 'GlitchOps',
 			description: 'GlitchLZ design, GCP reference, Terraform and runbooks.',
