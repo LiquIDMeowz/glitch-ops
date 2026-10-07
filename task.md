@@ -6,7 +6,7 @@
 | Projects via glitch-lz 3-projects | done | glitch-ops-dev / -prod; GitHub envs dev / prod + variables set |
 | Choose static site generator + site skeleton | done | Astro Starlight in `site/`; content from private `glitch-ops-content` |
 | Export ClickUp docs to Markdown | done | 2026-10-07: 102 pages from the 9 current docs (LZ Design, Terraform, 7 GCP) via API v3; links rewritten. ClickUp kept as backup; legacy single-page .md docs not imported |
-| Generate LZ ADR page from glitch-lz `project.md` | pending | ClickUp ADR page stops at 043; repo has 046 — make the repo the single source, like the module pages |
+| Generate LZ ADR page from glitch-lz `project.md` | done | 2026-10-07: decisions + lessons learned generated from project.md / errors.md of the public repos |
 | Login server (Firebase `__session` cookie + email allowlist) | done | `server/` (Hono + firebase-admin, Node 24 runs TS directly), 17 vitest tests; not deployed yet |
 | Firebase: project, Hosting sites, Auth config, custom domains (Terraform) | done | `infra/` (#5); dev Firebase project + site still to import (infra/README) | Firebase + Hosting site created in dev by a 2026-09-30 test (scratch state) — import into `infra/` |
 | First dev deploy | done | 2026-10-01 run 36828102412 (after ERR-002); Hosting → Cloud Run → login page verified |
@@ -22,5 +22,5 @@
 
 ## Handoff
 
-- 2026-09-30: skeleton, private content repo, login server (#3), modules (glitch-modules #4, CI + required `ci-ok`) done. Firebase + Hosting site `glitch-ops-dev-wiki` exist in dev from a scratch test (local state in a Claude scratchpad — re-import into `infra/`, don't recreate).
-- Next: glitch-lz 3-projects Firebase change (task above) → module SA option → `glitch-ops/infra` (Firebase import, Hosting sites, Auth config, custom domains, artifact-repo + cloud-run-service, Dockerfile) → CI with deploy key → /security-review → manual steps (Google sign-in in Firebase console, SuperHosting DNS, deploy key).
+- 2026-10-07: wiki live on **dev** (https://dev.wiki.glitch-cloud.com): ClickUp import (102 pages), Workloads, generated ADRs / lessons learned / modules, Mermaid. Dependabot alerts fixed; Dependabot PRs skip the plan job (no secrets).
+- Next: **prod** — follow the Prod rows above in order (Firebase by operator → approve deploy → sign-in + OAuth client + DNS). Optional: hardening row, more CMEK pages.
