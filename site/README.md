@@ -11,7 +11,7 @@ and holds **no pages**: they live in the private `glitch-ops-content` repo and a
 | `pnpm build` | Sync content, build the static site into `dist/` |
 | `pnpm content:sync` | Only sync content (`CONTENT_DIR` overrides `../../glitch-ops-content/docs`) |
 
-Module pages (`landing-zone/modules/`) are generated from the public glitch-modules READMEs
-(`MODULES_DIR`, default `../../glitch-modules/modules`). Without the content repo the build uses
+Landing Zone module, decision and lessons-learned pages are generated from the public repos (module READMEs, `project.md`, `errors.md`)
+(`REPOS_DIR`, default: sibling checkouts). Without the content repo the build uses
 `placeholder/index.md`. Sidebar groups are generated from
 the content's top-level folders (`astro.config.mjs`), so new groups need no change here.
