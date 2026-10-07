@@ -21,3 +21,14 @@ Two providers, as in Firebase's Terraform samples: a plain provider (caller's qu
 ### Resolution
 Removed the override; the module default (512Mi) is the gen2 minimum. Cost is unaffected in
 practice (scale to zero, billed per request). Follow-up: validate memory ≥ 512Mi in the module.
+
+## ERR-003 — Sign-in on dev.wiki: Error 400 redirect_uri_mismatch
+- **Date:** 2026-10-07
+- **Tried:** Google sign-in on https://dev.wiki.glitch-cloud.com after enabling the Google provider in the Firebase console.
+- **Result:** `Access blocked: Error 400: redirect_uri_mismatch`. The OAuth client Firebase auto-creates only allows `https://<project>.firebaseapp.com/__/auth/handler`, but the login uses the custom domain as `authDomain`.
+
+### Resolution
+Console (APIs & Services → Credentials → "Web client (auto created by Google Service)"): add
+JavaScript origin `https://<domain>` and redirect URI `https://<domain>/__/auth/handler`. Needed per
+project (prod: wiki.glitch-cloud.com). Also: Google picked the first browser account silently —
+login now sets `prompt: 'select_account'`.

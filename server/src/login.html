@@ -40,7 +40,11 @@
 			button.disabled = true;
 			status.textContent = '';
 			try {
-				const { user } = await signInWithPopup(auth, new GoogleAuthProvider());
+				// Always show the account chooser — with several Google accounts in the browser, Google
+				// would otherwise silently pick the first one.
+				const provider = new GoogleAuthProvider();
+				provider.setCustomParameters({ prompt: 'select_account' });
+				const { user } = await signInWithPopup(auth, provider);
 				const response = await fetch('/__auth/session', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
