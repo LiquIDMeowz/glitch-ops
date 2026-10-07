@@ -7,7 +7,13 @@ import starlight from '@astrojs/starlight';
 // folders: `automation/` becomes the "Automation" group and every Markdown file in it a page;
 // subfolders become nested groups. Nothing about the content is hard-coded in this public repo.
 const docsDir = new URL('./src/content/docs/', import.meta.url);
-const label = (name) => name.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+// Folder name → group label; known acronyms stay upper case ("cmek" → "CMEK").
+const ACRONYMS = new Set(['cmek', 'iam', 'vpc', 'gcs', 'gke', 'kms', 'dns', 'sql', 'ci', 'cd']);
+const label = (name) =>
+	name
+		.split('-')
+		.map((word) => (ACRONYMS.has(word) ? word.toUpperCase() : word.charAt(0).toUpperCase() + word.slice(1)))
+		.join(' ');
 const groups = readdirSync(docsDir, { withFileTypes: true })
 	.filter((entry) => entry.isDirectory())
 	.map(({ name }) => ({
