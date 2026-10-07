@@ -9,8 +9,10 @@
 | Login server (Firebase `__session` cookie + email allowlist) | done | `server/` (Hono + firebase-admin, Node 24 runs TS directly), 17 vitest tests; not deployed yet |
 | Firebase: project, Hosting sites, Auth config, custom domains (Terraform) | done | `infra/` (#5); dev Firebase project + site still to import (infra/README) | Firebase + Hosting site created in dev by a 2026-09-30 test (scratch state) — import into `infra/` |
 | First dev deploy | done | 2026-10-01 run 36828102412 (after ERR-002); Hosting → Cloud Run → login page verified |
-| Enable Google sign-in (dev) + DNS CNAME dev.wiki → glitch-ops-dev-wiki.web.app | pending | Manual; then test sign-in on https://dev.wiki.glitch-cloud.com |
-| Prod: Google sign-in, DNS CNAME wiki → glitch-ops-prod-wiki.web.app, approve prod deploy | pending | After dev works end to end |
+| Enable Google sign-in (dev) + DNS for dev.wiki | done | 2026-10-07; certificate minting. Test sign-in on https://dev.wiki.glitch-cloud.com (sign-in only works on the custom domain) |
+| Prod: add Firebase to glitch-ops-prod (one-time, operator credentials) | pending | Before the first prod deploy. Deployer can't: AddFirebase enables ~14 APIs and the deployer has no serviceusage admin **by design** — don't widen it. Then `terraform import google_firebase_project.this projects/glitch-ops-prod` into `ops/prod` state (infra/README). Firebase also creates the undeletable default site `glitch-ops-prod` — ignore it |
+| Prod: approve the waiting prod deploy | pending | After the Firebase step; creates Auth config, `glitch-ops-prod-wiki` site, AR, Cloud Run |
+| Prod: Google sign-in in Firebase console + DNS for `wiki` at SuperHosting | pending | Same TXT + CNAME pattern as dev.hub / dev.wiki (not Firebase's literal records); CNAME → glitch-ops-prod-wiki.web.app |
 | Hardening: logout via POST, Content-Security-Policy, pin node:24-slim by digest | pending | From the pre-deploy review 2026-10-01; none blocking |
 | glitch-lz 3-projects: Firebase for `ops` | done | glitch-lz #20 (apply needs lz-apply approval). APIs firebase, firebasehosting, identitytoolkit; deployer roles firebasehosting.admin + identityplatform.admin; drop iap API/role; custom role with only `firebaseauth.users.createSession` + runtime SA `wiki@` granted it (deployer can't grant IAM — no projectIamAdmin by design). Then lz-apply approval |
 | glitch-modules cloud-run-service: optional existing `service_account_email` | done | glitch-modules #5 | So the factory-created runtime SA can be used; before tagging v0.1.0 |
